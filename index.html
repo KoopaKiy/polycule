@@ -1,0 +1,434 @@
+<form>
+<input name="addNode" type="button" value="Add Person" onclick="buttonAdd()" />
+<input name="remNode" type="button" value="Remove Person" onclick="buttonRem()" />
+</form>
+
+<form id="nodeform">
+</form>
+
+<form id="relselect">
+  <select id="relname1"
+          onInput="setRel2();setInt();setRelType();">
+  </select>
+  
+  <select id="relname2"
+          onInput="setInt();setRelType();">
+  </select>
+  
+  <select id="intSel"
+          onInput="changeInt()">
+  </select>
+  
+  <select id="relTypeSel"
+          onInput="changeRelType()">
+  </select>
+</form>
+
+<form>
+  <input name="updateButton" 
+                type="button" 
+                value="Update" 
+                onclick="printInfo()" />
+  <input name="graphButton"
+                type="button"
+                value="Graph"
+                onclick="graph()" />
+</form>
+
+
+
+
+<script type="text/javascript" src="https://d3js.org/d3.v2.min.js" charset="utf-8"></script>
+<script>
+
+//Global variables
+var polycule = {"nodes":[]};
+var nodenum = d3.select("#nodenum");
+var numbernodes = [1];
+
+
+//On run
+initialize(numbernodes.length);
+
+
+//Listener funcitons
+function printInfo(){
+  console.log(polycule);
+}
+function buttonAdd(){
+  numbernodes.push(numbernodes.length+1);
+  addNodeDiv(numbernodes.length);
+  addRel(numbernodes.length);
+  setRel2();
+}
+function buttonRem(){
+  if (numbernodes.length>1){
+    numbernodes.pop();
+    remNodeDiv();
+    remRel();
+    setRel2();
+  }
+}
+function changeName(id, name) {
+  id = parseInt(id.substring(4));
+  polycule["nodes"][id-1]["name"] = name;
+  updateRel(id, name);
+  setRel2();
+}
+function changeGender(id, gender) {
+  id = id.substring(6);
+  polycule["nodes"][id-1]["gender"] = gender;
+}
+function setRel2() {
+  var relSel1 = d3.selectAll("#relname1");
+  var selected = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var rel2Opt = d3.selectAll(".rel2option");
+  rel2Opt.remove();
+  var data = [];
+  for(n=1;n<=polycule["nodes"].length;n++){
+    if(polycule["nodes"][n-1]["number"]!=selected){
+      data.push(polycule["nodes"][n-1]);
+    }
+    relSel2.selectAll(".rel2option").data(data).enter()
+                                  .append("option")
+                                  .attr("class", "rel2option")
+                                  .attr("value", polycule["nodes"][n-1]["number"])
+                                  .html(polycule["nodes"][n-1]["name"]);
+  }
+  
+}
+function changeInt(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var temp = (larger-1)-(smaller-1)-1;
+  var selected = d3.selectAll("#intSel").property("value");
+  polycule["nodes"][larger-1]["relations"][temp]["intensity"] = selected;
+  console.log(polycule["nodes"][larger-1]["relations"][temp]);
+}
+function changeRelType(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var temp = (larger-1)-(smaller-1)-1;
+  var selected = d3.selectAll("#relTypeSel").property("value");
+  polycule["nodes"][larger-1]["relations"][temp]["type"] = selected;
+  console.log(polycule["nodes"][larger-1]["relations"][temp]);
+}
+
+//Initialize
+function initialize(number){
+  console.log("Initialize with "+number+" nodes.");
+  
+  //Add Nodes
+  for (var n=1;n<=number;n++){
+    addNodeDiv(n);
+    addRel(n);
+  }
+}
+
+
+//Input to display -> grow
+function addNodeDiv(number){
+  console.log("Add node div number "+number);
+  
+  //HTML
+  var nodeform = d3.selectAll("#nodeform").selectAll(".nodename");
+  var newdiv = nodeform.data(numbernodes).enter().append("div")
+                                                 .attr("class","nodediv")
+                                                 .attr("id","node"+number);
+  addNodeNames(newdiv, number);
+  addNodeGend(newdiv, number);
+  
+  //Data
+  var relations = [];
+  for (n=number-1;n>0;n--){
+    if(number!=n){
+      relations.push({"other": n, "intensity": "0", "type": "0"});
+    }
+  }
+  var node = {"number": number, "name": number, "gender": "orange", "relations": relations};
+  polycule["nodes"].push(node);
+}
+
+function addNodeNames(div, number){
+  div.append("input")
+      .attr("class","nodename")
+      .attr("id","name"+number)
+      .attr("type","text")
+      .attr("placeholder", "Name "+number)
+      .attr("onInput", "changeName(this.id, this.value)");
+}
+
+function addNodeGend(div, number){
+  var genders = div.append("select")
+                      .attr("class","nodegender")
+                      .attr("id","gender"+number)
+                      .attr("onInput", "changeGender(this.id, this.value)");
+  genders.append("option")
+          .attr("value","orange")
+          .html("They/Theirs");
+  genders.append("option")
+          .attr("value","blue")
+          .html("He/His");
+  genders.append("option")
+          .attr("value","red")
+          .html("She/Hers");
+}
+
+function addRel(number){
+  console.log("Add rel number "+number);
+  
+  var relSel1 = d3.selectAll('#relname1').selectAll('.rel1C');
+  choice = relSel1.data(polycule["nodes"]).enter()
+                          .append("option")
+                          .attr("class","rel1C")
+                          .attr("id", "rel1C"+number)
+                          .attr("value", polycule["nodes"][number-1]["number"])
+                          .html(number);
+  setRel2();
+  setInt();
+  setRelType();
+}
+function setInt(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var intSel = d3.selectAll("#intSel");
+  intSel.html("");
+  intSel.append("option")
+        .attr("class", "intOpt")
+        .attr("id", "intOpt0")
+        .attr("value", 0)
+        .html("Metamour");
+  intSel.append("option")
+        .attr("class", "intOpt")
+        .attr("id", "intOpt1")
+        .attr("value", 1)
+        .html("Former");
+  intSel.append("option")
+        .attr("class", "intOpt")
+        .attr("id", "intOpt2")
+        .attr("value", 2)
+        .html("Casual");
+  intSel.append("option")
+        .attr("class", "intOpt")
+        .attr("id", "intOpt3")
+        .attr("value", 3)
+        .html("Dating");
+  intSel.append("option")
+        .attr("class", "intOpt")
+        .attr("id", "intOpt4")
+        .attr("value", 4)
+        .html("Engaged/Married");
+        
+  var temp = (larger-1)-(smaller-1)-1;
+  selected = d3.selectAll("#intOpt"+polycule["nodes"][larger-1]["relations"][temp]["intensity"]);
+  selected.attr("selected", "selected");
+}
+function setRelType(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var relType = d3.selectAll("#relTypeSel");
+  relType.html("");
+  relType.append("option")
+        .attr("class", "relTypeOpt")
+        .attr("id", "relTypeOpt0")
+        .attr("value", 0)
+        .html("Neither Sexual or Romantic");
+  relType.append("option")
+        .attr("class", "relTypeOpt")
+        .attr("id", "relTypeOpt1")
+        .attr("value", 1)
+        .html("Sexual");
+  relType.append("option")
+        .attr("class", "relTypeOpt")
+        .attr("id", "relTypeOpt2")
+        .attr("value", 2)
+        .html("Romantic");
+  relType.append("option")
+        .attr("class", "relTypeOpt")
+        .attr("id", "relTypeOpt3")
+        .attr("value", 3)
+        .html("Sexual and Romantic");
+        
+  var temp = (larger-1)-(smaller-1)-1;
+  selected = d3.selectAll("#relTypeOpt"+polycule["nodes"][larger-1]["relations"][temp]["type"]);
+  selected.attr("selected", "selected");
+}
+
+
+//Input to display -> shrink
+function remNodeDiv(){
+  console.log("Removed node div number "+(numbernodes.length+1));
+  
+  var nodeform = d3.selectAll("#nodeform").selectAll(".nodediv");
+  nodeform.data(numbernodes).exit().remove();
+  
+  //Data
+  polycule["nodes"].pop();
+}
+
+function remRel(){
+  console.log("Remove rel number "+(numbernodes.length+1));
+  
+  var relSel1 = d3.selectAll('#relname1').selectAll(".rel1C");
+  relSel1.data(polycule["nodes"]).exit().remove();
+  setRel2();
+  setInt();
+  setRelType();
+}
+
+//Update functions
+function update(){
+  
+}
+function updateRel(id, name){
+  console.log(d3.selectAll(".rel1C"));
+  d3.selectAll("#rel1C"+id).html(name);
+}
+
+//Graphing
+function graph(){
+  d3.selectAll("svg").remove();
+  var svgContainer = d3.select("body").append("svg")
+                                      .attr("width", 1000)
+                                      .attr("height", 1000);
+  for(n=1;n<=polycule["nodes"].length;n++){
+    for(r=1;r<=polycule["nodes"][n-1]["relations"].length;r++){
+      console.log("n is "+n+" r is "+r);
+      graphLine(n, polycule["nodes"][n-1]["relations"][r-1]);
+    }
+  }
+  for(n=1;n<=polycule["nodes"].length;n++){
+    graphText(n);
+  }
+}
+
+function graphText(n){
+  var coords = cirPlace(polycule["nodes"].length, n);
+  var node = d3.selectAll("svg").append("text");
+  var telement = node.attr("font-size", 35)
+      .text(polycule["nodes"][n-1]["name"])
+      .attr("fill", "white")
+      .attr("x", coords["x"]+5)
+      .attr("y", coords["y"]);
+  width = telement.node().getBoundingClientRect().width;
+  height = telement.node().getBoundingClientRect().height;
+  telement.remove();
+  var rect = d3.selectAll("svg").append("rect");
+  var ele = rect.attr("width", width+10)
+                .attr("height", height+10)
+                .attr("x", coords["x"])
+                .attr("y", coords["y"]-height)
+                .attr("rx", 10)
+                .attr("ry", 10)
+                .attr("stroke", polycule["nodes"][n-1]["gender"])
+                .attr("fill", "white")
+                .attr("id", "grect"+n);
+  var node = d3.selectAll("svg").append("text");
+  var element = node.attr("font-size", 35)
+      .text(polycule["nodes"][n-1]["name"])
+      .attr("fill", "black")
+      .attr("x", coords["x"]+5)
+      .attr("y", coords["y"])
+      .attr("id", "gname"+n);
+}
+
+function cirPlace(total, number){
+  var offset = 300;
+  var radius = 250;
+  var x = offset + radius * Math.cos(2 * Math.PI * number / total);
+  var y = offset + radius * Math.sin(2 * Math.PI * number / total);
+  return {"x":x, "y":y};
+}
+
+function graphLine(n, relation){
+  console.log(n+" to "+relation["other"])
+  var type = relation["type"];
+  var second = d3.selectAll("#gname"+n).node();
+  var first = d3.selectAll("#gname"+relation["other"]).node();
+  var firstcoords = cirPlace(polycule["nodes"].length, relation["other"]);
+  var secondcoords = cirPlace(polycule["nodes"].length, n);
+  var xdiff = secondcoords["x"]-firstcoords["x"];
+  var ydiff = secondcoords["y"]-firstcoords["y"];
+  
+  var inten = findInt(relation["intensity"]);
+  var type = findType(relation["type"]);
+  
+  var svgContainer = d3.select("body").selectAll("svg");
+  if(relation["intensity"]!=0){
+    var line = svgContainer.append("path")
+                           .attr("d", "M "+(firstcoords["x"]+10)+" "+(firstcoords["y"]-5)+" l "+(xdiff)+" "+(ydiff))
+                           .attr(inten["attr1"], inten["value1"])
+                           .attr(inten["attr2"], inten["value2"])
+                           .attr(type["attr1"], type["value1"]);
+  }
+}
+
+function findInt(int){
+  var data = {"attr1": "stroke-width", "value1": "3", "attr2": "stroke-dasharray", "value2": "0,0"};
+  if (int==0){
+    data["value1"] = 0;
+  } else if (int==1){
+    data["value2"] = "5,10"
+  } else if (int==2){
+    data["value2"] = "20,20";
+  } else if (int==3){
+    data["value2"] = "0,0";
+  } else if (int==4){
+    data["value1"] = "5";
+  }
+  return data;
+}
+
+function findType(type){
+  var data = {"attr1": "stroke", "value1": "black"};
+  if (type==0){
+    data["value1"] = "white";
+  } else if (type==1){
+    data["value1"] = "red"
+  } else if (type==2){
+    data["value1"] = "blue";
+  } else if (type==3){
+    data["value1"] = "black";
+  }
+  return data;
+}
+
+</script>
+
