@@ -8,11 +8,11 @@
 
 <form id="relselect">
   <select id="relname1"
-          onInput="setRel2();setInt();setRelType();">
+          onInput="setRel2();setInt();setRelType();setCoparent();setCohab();">
   </select>
   
   <select id="relname2"
-          onInput="setInt();setRelType();">
+          onInput="setInt();setRelType();setCoparent();setCohab();">
   </select>
   
   <select id="intSel"
@@ -22,6 +22,16 @@
   <select id="relTypeSel"
           onInput="changeRelType()">
   </select>
+  
+  <input type="checkbox" id="cohab"
+        onChange="changeCohab()">
+        Living together
+  </input>
+  
+  <input type="checkbox" id="coparent"
+        onChange="changeCoparent()">
+        Parenting together
+  </input>
 </form>
 
 <form>
@@ -113,7 +123,6 @@ function changeInt(){
   var temp = (larger-1)-(smaller-1)-1;
   var selected = d3.selectAll("#intSel").property("value");
   polycule["nodes"][larger-1]["relations"][temp]["intensity"] = selected;
-  console.log(polycule["nodes"][larger-1]["relations"][temp]);
 }
 function changeRelType(){
   var relSel1 = d3.selectAll("#relname1");
@@ -130,7 +139,46 @@ function changeRelType(){
   var temp = (larger-1)-(smaller-1)-1;
   var selected = d3.selectAll("#relTypeSel").property("value");
   polycule["nodes"][larger-1]["relations"][temp]["type"] = selected;
-  console.log(polycule["nodes"][larger-1]["relations"][temp]);
+}
+function changeCohab(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var temp = (larger-1)-(smaller-1)-1;
+  var selected = d3.selectAll('#cohab').property("checked");
+  if(selected){
+    polycule["nodes"][larger-1]["relations"][temp]["cohab"] = 1;
+  } else {
+    polycule["nodes"][larger-1]["relations"][temp]["cohab"] = 0;
+  }
+}
+function changeCoparent(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var temp = (larger-1)-(smaller-1)-1;
+  var selected = d3.selectAll('#coparent').property("checked");
+  if(selected){
+    polycule["nodes"][larger-1]["relations"][temp]["coparent"] = 1;
+  } else {
+    polycule["nodes"][larger-1]["relations"][temp]["coparent"] = 0;
+  }
 }
 
 //Initialize
@@ -161,7 +209,7 @@ function addNodeDiv(number){
   var relations = [];
   for (n=number-1;n>0;n--){
     if(number!=n){
-      relations.push({"other": n, "intensity": "0", "type": "0"});
+      relations.push({"other": n, "intensity": "0", "type": "0", "cohab": 0, "coparent": 0});
     }
   }
   var node = {"number": number, "name": number, "gender": "orange", "relations": relations};
@@ -290,7 +338,48 @@ function setRelType(){
   selected = d3.selectAll("#relTypeOpt"+polycule["nodes"][larger-1]["relations"][temp]["type"]);
   selected.attr("selected", "selected");
 }
-
+function setCohab(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var cohab = d3.selectAll("#cohab");
+  var temp = (larger-1)-(smaller-1)-1;
+  var value = polycule["nodes"][larger-1]["relations"][temp]["cohab"]
+  if(value==1){
+    cohab.property("checked", true);
+  } else {
+    cohab.property("checked", false);
+  }
+}
+function setCoparent(){
+  var relSel1 = d3.selectAll("#relname1");
+  var selected1 = relSel1.property("value");
+  var relSel2 = d3.selectAll("#relname2");
+  var selected2 = relSel2.property("value");
+  if(selected1>selected2){
+    var larger = selected1;
+    var smaller = selected2;
+  } else {
+    var larger = selected2;
+    var smaller = selected1;
+  }
+  var coparent = d3.selectAll("#coparent");
+  var temp = (larger-1)-(smaller-1)-1;
+  var value = polycule["nodes"][larger-1]["relations"][temp]["coparent"]
+  if(value==1){
+    coparent.property("checked", true);
+  } else {
+    coparent.property("checked", false);
+  }
+}
 
 //Input to display -> shrink
 function remNodeDiv(){
@@ -389,8 +478,23 @@ function graphLine(n, relation){
   
   var inten = findInt(relation["intensity"]);
   var type = findType(relation["type"]);
+  var cohab = relation["cohab"];
+  var coparent = relation["coparent"];
   
   var svgContainer = d3.select("body").selectAll("svg");
+  
+  if(coparent==1){
+    var line = svgContainer.append("path")
+                           .attr("d", "M "+(firstcoords["x"]+10)+" "+(firstcoords["y"]-5)+" l "+(xdiff)+" "+(ydiff))
+                           .attr("stroke-width", 15)
+                           .attr("stroke", "#EE8434");
+  }
+  if(cohab==1){
+    var line = svgContainer.append("path")
+                           .attr("d", "M "+(firstcoords["x"]+10)+" "+(firstcoords["y"]-5)+" l "+(xdiff)+" "+(ydiff))
+                           .attr("stroke-width", 10)
+                           .attr("stroke", "#0E0F0E");
+  }
   if(relation["intensity"]!=0){
     var line = svgContainer.append("path")
                            .attr("d", "M "+(firstcoords["x"]+10)+" "+(firstcoords["y"]-5)+" l "+(xdiff)+" "+(ydiff))
@@ -421,11 +525,11 @@ function findType(type){
   if (type==0){
     data["value1"] = "white";
   } else if (type==1){
-    data["value1"] = "red"
+    data["value1"] = "#B52653"
   } else if (type==2){
-    data["value1"] = "blue";
+    data["value1"] = "#2589BD";
   } else if (type==3){
-    data["value1"] = "black";
+    data["value1"] = "#6A40B2";
   }
   return data;
 }
