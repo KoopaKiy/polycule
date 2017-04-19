@@ -1,3 +1,8 @@
+<head>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
 <form>
 <input name="addNode" type="button" value="Add Person" onclick="buttonAdd()" />
 <input name="remNode" type="button" value="Remove Person" onclick="buttonRem()" />
@@ -39,11 +44,65 @@
                 type="button" 
                 value="Update" 
                 onclick="printInfo()" /> -->
+  <!-- <input name="debugButton"
+         type="button"
+         value="Debug"
+         onClick="makePods()" /> -->
   <input name="graphButton"
                 type="button"
                 value="Graph"
                 onclick="graph()" />
 </form>
+
+<h3>Legend</h3>
+<table>
+  <tr>
+    <th colspan="2">Cohabitation and coparenting</th>
+    <th colspan="2">Relationship Intensity</th>
+    <th colspan="2">Relationship Type</th>
+  </tr>
+  <tr>
+    <td id="tdleft" style="border-bottom: 7px solid #0E0F0E">Cohabitation</td>
+    <td id="tdright" style="border-bottom: 7px solid #0E0F0E">Thick black line behind other lines</td>
+    
+    <td id="tdleft" style="border-bottom: 5px solid black">Engaged/Married</td>
+    <td id="tdright" style="border-bottom: 5px solid black">Thick line</td>
+    
+    <td id="tdleft" style="border-bottom: 2px solid #B52653">Red</td>
+    <td id="tdright" style="border-bottom: 2px solid #B52653">Sexual only, aromantic</td>
+  </tr>
+  <tr>
+    <td id="tdleft" style="border-bottom: 9px solid #EE8434">Coparenting</td>
+    <td id="tdright" style="border-bottom: 9px solid #EE8434">Thick brown line behind other lines</td>
+    
+    <td id="tdleft" style="border-bottom: 2px solid black">Dating</td>
+    <td id="tdright" style="border-bottom: 2px solid black">Solid line</td>
+    
+    <td id="tdleft" style="border-bottom: 2px solid #2589BD">Blue</td>
+    <td id="tdright" style="border-bottom: 2px solid #2589BD">Romantic only, asexual</td>
+  </tr>
+  <tr>
+    <td id="tdleft"></td>
+    <td id="tdright"></td>
+    
+    <td id="tdleft" style="border-bottom: 2px dashed black">Casual</td>
+    <td id="tdright" style="border-bottom: 2px dashed black">Dashed line</td>
+    
+    <td id="tdleft" style="border-bottom: 2px solid #6A40B2">Purple</td>
+    <td id="tdright" style="border-bottom: 2px solid #6A40B2">Romantic and sexual</td>
+  </tr>
+  <tr>
+    <td id="tdleft"></td>
+    <td id="tdright"></td>
+    
+    <td id="tdleft" style="border-bottom: 2px dotted black">Former</td>
+    <td id="tdright" style="border-bottom: 2px dotted black">Dotted line</td>
+    
+    <td id="tdleft"></td>
+    <td id="tdright"></td>
+  </tr>
+</table>
+</table>
 
 
 
@@ -183,8 +242,6 @@ function changeCoparent(){
 
 //Initialize
 function initialize(number){
-  console.log("Initialize with "+number+" nodes.");
-  
   //Add Nodes
   for (var n=1;n<=number;n++){
     addNodeDiv(n);
@@ -195,8 +252,6 @@ function initialize(number){
 
 //Input to display -> grow
 function addNodeDiv(number){
-  console.log("Add node div number "+number);
-  
   //HTML
   var nodeform = d3.selectAll("#nodeform").selectAll(".nodename");
   var newdiv = nodeform.data(numbernodes).enter().append("div")
@@ -242,8 +297,6 @@ function addNodeGend(div, number){
 }
 
 function addRel(number){
-  console.log("Add rel number "+number);
-  
   var relSel1 = d3.selectAll('#relname1').selectAll('.rel1C');
   choice = relSel1.data(polycule["nodes"]).enter()
                           .append("option")
@@ -383,8 +436,6 @@ function setCoparent(){
 
 //Input to display -> shrink
 function remNodeDiv(){
-  console.log("Removed node div number "+(numbernodes.length+1));
-  
   var nodeform = d3.selectAll("#nodeform").selectAll(".nodediv");
   nodeform.data(numbernodes).exit().remove();
   
@@ -393,8 +444,6 @@ function remNodeDiv(){
 }
 
 function remRel(){
-  console.log("Remove rel number "+(numbernodes.length+1));
-  
   var relSel1 = d3.selectAll('#relname1').selectAll(".rel1C");
   relSel1.data(polycule["nodes"]).exit().remove();
   setRel2();
@@ -407,7 +456,6 @@ function update(){
   
 }
 function updateRel(id, name){
-  console.log(d3.selectAll(".rel1C"));
   d3.selectAll("#rel1C"+id).html(name);
 }
 
@@ -419,7 +467,6 @@ function graph(){
                                       .attr("height", 1000);
   for(n=1;n<=polycule["nodes"].length;n++){
     for(r=1;r<=polycule["nodes"][n-1]["relations"].length;r++){
-      console.log("n is "+n+" r is "+r);
       graphLine(n, polycule["nodes"][n-1]["relations"][r-1]);
     }
   }
@@ -467,7 +514,6 @@ function cirPlace(total, number){
 }
 
 function graphLine(n, relation){
-  console.log(n+" to "+relation["other"])
   var type = relation["type"];
   var second = d3.selectAll("#gname"+n).node();
   var first = d3.selectAll("#gname"+relation["other"]).node();
@@ -534,5 +580,21 @@ function findType(type){
   return data;
 }
 
-</script>
+function makePods(){
+  //This is still in development, it will create groupings of people based on relationships
+  relations = [];
+  
+  for(n=polycule["nodes"].length-1;n>=0;n--){
+    for(r=0;r<polycule["nodes"][n]["relations"].length;r++){
+      if(polycule["nodes"][n]["relations"][r]["intensity"]>0){
+        other = polycule["nodes"][n]["relations"][r]["other"]-1;
+        relations.push({"larger": n+1, "smaller": other+1});
+        //console.log(polycule["nodes"][n]["name"]+" and "+polycule["nodes"][other]["name"]);
+      }
+    }
+  }
+  
+}
 
+</script>
+</body>
